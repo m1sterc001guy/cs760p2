@@ -1,4 +1,5 @@
 import arff
+import sys
 
 classDict = {}
 conditionalCounts = {}
@@ -40,7 +41,11 @@ def printNaiveBayesStructure(testData):
     print attr[0] + ' ' + label
 
 def trainNaiveBayes(trainFileName):
-  data = arff.load(open(trainFileName, 'rb'))
+  try:
+    data = arff.load(open(trainFileName, 'rb'))
+  except IOError:
+    print 'Error. Invalid training set file name specified. Quitting...'
+    sys.exit(-1)
   for row in data['data']:
     label = row[len(row) - 1]
     if label in classDict:
@@ -62,7 +67,11 @@ def trainNaiveBayes(trainFileName):
         conditionalCounts[label][i][value] += 1
 
 def classifyNaiveBayes(testFileName):
-  testData = arff.load(open(testFileName, 'rb'))
+  try:
+    testData = arff.load(open(testFileName, 'rb'))
+  except IOError:
+    print 'Error. Invalid test set file name specified. Quitting...'
+    sys.exit(-1)
   printNaiveBayesStructure(testData)
   print '\n'
   examplesClassifiedCorrectly = 0
@@ -83,8 +92,20 @@ def classifyNaiveBayes(testFileName):
 
 if __name__ == "__main__":
 
-  trainNaiveBayes('lymph_train.arff')
-  numCorrectExamples = classifyNaiveBayes('lymph_test.arff')
-  print '\n'
-  print numCorrectExamples
+  if len(sys.argv) != 4:
+    print 'Error. Invalid number of arguments specified. Quitting...'
+    sys.exit(-1)
+  trainFileName = sys.argv[1]
+  testFileName = sys.argv[2]
+  if sys.argv[3] == 'n':
+    trainNaiveBayes(trainFileName)
+    numCorrectExamples = classifyNaiveBayes(testFileName)
+    print '\n'
+    print numCorrectExamples
+  elif sys.argv[3] == 't':
+    print 'TAN'
+  else:
+    print 'Error. Invalid algorithm specified. Quitting...'
+    sys.exit(-1)
+  
   
