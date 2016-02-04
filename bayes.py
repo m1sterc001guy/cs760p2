@@ -1,8 +1,10 @@
 import arff
 import sys
+import math
 
 classDict = {}
 conditionalCounts = {}
+counts = {}
 k = 1
 
 def getPartProbForLabel(label, total, row, testData):
@@ -60,11 +62,17 @@ def trainNaiveBayes(trainFileName):
     for i in xrange(0, len(row) - 1):
       if i not in conditionalCounts[label]:
         conditionalCounts[label][i] = {}
+      if i not in counts:
+        counts[i] = {}
       value = row[i]
       if value not in conditionalCounts[label][i]:
         conditionalCounts[label][i][value] = 1
       else:
         conditionalCounts[label][i][value] += 1
+      if value not in counts[i]:
+        counts[i][value] = 1
+      else:
+        counts[i][value] += 1
 
 def classifyNaiveBayes(testFileName):
   try:
@@ -90,6 +98,30 @@ def classifyNaiveBayes(testFileName):
     print calcLabel + ' ' + actualLabel + ' ' + str(maxProb)
   return examplesClassifiedCorrectly
 
+def getProbForValue(index, value, data):
+  total = 0
+  for currlabel, count in classDict.items():  
+    total += count
+  numOfValue = counts[index][value]
+  numOfType = len(data['attributes'][index][1])
+  prob = float((numOfValue + k)) / float((total + (k * numOfType)))
+  print 'prob: ' + str(prob)
+  return prob
+
+def getJointProbForValue(index1, value1, index2, value2, data):
+  total = 0
+  for currlabel, count in classDict.items():  
+    total += count
+
+  jointCount = 0
+  for row in data['data']:
+    if row[index1] == value1 and row[index2] == value2:
+      count += 1
+
+  prob = float((jointCount + k)) / float((total + (k * 2)))
+  print 'joint prob: ' + str(prob)
+  return prob
+
 if __name__ == "__main__":
 
   if len(sys.argv) != 4:
@@ -97,13 +129,22 @@ if __name__ == "__main__":
     sys.exit(-1)
   trainFileName = sys.argv[1]
   testFileName = sys.argv[2]
+  trainNaiveBayes(trainFileName)
   if sys.argv[3] == 'n':
-    trainNaiveBayes(trainFileName)
     numCorrectExamples = classifyNaiveBayes(testFileName)
     print '\n'
     print numCorrectExamples
   elif sys.argv[3] == 't':
     print 'TAN'
+    try:
+      data = arff.load(open(trainFileName, 'rb'))
+    except IOError:
+      print 'Error. Invalid training set file name specified. Quitting...'
+      sys.exit(-1)
+    # need to loop over all values of x and y
+    #probX = getProbForValue(0, 'displaced', data)
+    #probY = getProbForValue(1, 'yes', data)
+    #jointProb = getJointProbForValue(0, 'displaced', 1, 'yes', data)
   else:
     print 'Error. Invalid algorithm specified. Quitting...'
     sys.exit(-1)

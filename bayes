@@ -1,1 +1,1 @@
-python bayes.py lymph_train.arff lymph_test.arff n
+python bayes.py lymph_train.arff lymph_test.arff t
