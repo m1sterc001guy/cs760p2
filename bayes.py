@@ -139,6 +139,8 @@ def getConditionalProb(index, value, label, data):
   return float((jointCount + k)) / float((countOfLabel + (k * numOfType)))
 
 def mutualInformation(x, y, data):
+  if x == y:
+    return -1.0
   xValues = data['attributes'][x][1]
   yValues = data['attributes'][y][1]
   
@@ -155,6 +157,17 @@ def mutualInformation(x, y, data):
         finalProb += (jointProb * logProb)
 
   return finalProb
+
+def calcMutualInfoForData(data):
+  mutualInfo = {}
+  attributes = data['attributes']
+  for x in xrange(0, len(attributes) - 1):
+    if x not in mutualInfo:
+      mutualInfo[x] = {}
+    for y in xrange(0, len(attributes) - 1):
+      mutualInfo[x][y] = mutualInformation(x, y, data)
+
+  return mutualInfo
 
 if __name__ == "__main__":
 
@@ -176,8 +189,8 @@ if __name__ == "__main__":
       print 'Error. Invalid training set file name specified. Quitting...'
       sys.exit(-1)
 
-    info = mutualInformation(0, 1, data)
-    print 'info: ' + str(info)
+    mutualInfo = calcMutualInfoForData(data)
+    print mutualInfo
   else:
     print 'Error. Invalid algorithm specified. Quitting...'
     sys.exit(-1)
