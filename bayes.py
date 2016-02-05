@@ -98,29 +98,63 @@ def classifyNaiveBayes(testFileName):
     print calcLabel + ' ' + actualLabel + ' ' + str(maxProb)
   return examplesClassifiedCorrectly
 
-def getProbForValue(index, value, data):
-  total = 0
-  for currlabel, count in classDict.items():  
-    total += count
-  numOfValue = counts[index][value]
-  numOfType = len(data['attributes'][index][1])
-  prob = float((numOfValue + k)) / float((total + (k * numOfType)))
-  print 'prob: ' + str(prob)
-  return prob
 
-def getJointProbForValue(index1, value1, index2, value2, data):
+def getJointProb(index1, value1, index2, value2, label, data):
   total = 0
   for currlabel, count in classDict.items():  
     total += count
 
   jointCount = 0
   for row in data['data']:
-    if row[index1] == value1 and row[index2] == value2:
-      count += 1
+    if row[index1] == value1 and row[index2] == value2 and row[len(row) - 1] == label:
+      jointCount += 1
 
-  prob = float((jointCount + k)) / float((total + (k * 2)))
-  print 'joint prob: ' + str(prob)
-  return prob
+  numOfType1 = len(data['attributes'][index1][1])
+  numOfType2 = len(data['attributes'][index2][1])
+  numOfLabel = len(data['attributes'][len(row) - 1][1])
+
+  return float((jointCount + k)) / float(total + (k * numOfType1 * numOfType2 * numOfLabel))
+
+def getJointConditionalProb(index1, value1, index2, value2, label, data):
+  jointCount = 0
+  for row in data['data']:
+    if row[index1] == value1 and row[index2] == value2 and row[len(row) - 1] == label:
+      jointCount += 1
+
+  numOfType1 = len(data['attributes'][index1][1])
+  numOfType2 = len(data['attributes'][index2][1])
+  countOfLabel = classDict[label]
+
+  return float((jointCount + k)) / float((countOfLabel + (k * numOfType1 * numOfType2)))
+
+def getConditionalProb(index, value, label, data):
+  jointCount = 0
+  for row in data['data']:
+    if row[index] == value and row[len(row) - 1] == label:
+      jointCount += 1
+
+  numOfType = len(data['attributes'][index][1])
+  countOfLabel = classDict[label]
+
+  return float((jointCount + k)) / float((countOfLabel + (k * numOfType)))
+
+def mutualInformation(x, y, data):
+  xValues = data['attributes'][x][1]
+  yValues = data['attributes'][y][1]
+  
+  finalProb = 0
+  for label in classDict:
+    for xVal in xValues:
+      for yVal in yValues:
+        jointCond = getJointConditionalProb(x, xVal, y, yVal, label, data)
+        xCond = getConditionalProb(x, xVal, label, data)
+        yCond = getConditionalProb(y, yVal, label, data)
+        ratio = jointCond / (xCond * yCond)
+        logProb = math.log(ratio, 2)
+        jointProb = getJointProb(x, xVal, y, yVal, label, data)
+        finalProb += (jointProb * logProb)
+
+  return finalProb
 
 if __name__ == "__main__":
 
@@ -141,10 +175,9 @@ if __name__ == "__main__":
     except IOError:
       print 'Error. Invalid training set file name specified. Quitting...'
       sys.exit(-1)
-    # need to loop over all values of x and y
-    #probX = getProbForValue(0, 'displaced', data)
-    #probY = getProbForValue(1, 'yes', data)
-    #jointProb = getJointProbForValue(0, 'displaced', 1, 'yes', data)
+
+    info = mutualInformation(0, 1, data)
+    print 'info: ' + str(info)
   else:
     print 'Error. Invalid algorithm specified. Quitting...'
     sys.exit(-1)

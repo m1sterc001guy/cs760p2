@@ -5,7 +5,6 @@
 @attribute 'class' { justin, nathan}
 @data
 no,yes,no,justin
-yes,yes,yes,nathan
-no,no,yes,justin
-no,yes,yes,nathan
-yes,yes,no,justin
+yes,no,yes,nathan
+no,yes,yes,justin
+yes,no,yes,nathan
