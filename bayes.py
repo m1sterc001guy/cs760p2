@@ -169,6 +169,41 @@ def calcMutualInfoForData(data):
 
   return mutualInfo
 
+def primsAlgo(mutualInfo):
+  vertices = set()
+  edges = {}
+
+  vertices.add(0) # start with the first attribute in the file
+  while len(vertices) < len(mutualInfo):
+    maxWeight = 0.0
+    fromVertToAdd = -1
+    toVertToAdd = -1
+    for fromVert in vertices:
+      for toVert in mutualInfo[fromVert]:
+        if toVert not in vertices:
+          if mutualInfo[fromVert][toVert] > maxWeight:
+            fromVertToAdd = fromVert
+            toVertToAdd = toVert
+            maxWeight = mutualInfo[fromVert][toVert]
+          elif mutualInfo[fromVert][toVert] == maxWeight:
+            if fromVert < fromVertToAdd:
+              fromVertToAdd = fromVert
+              toVertToAdd = toVert
+              maxWeight = mutualInfo[fromVert][toVert]
+            elif fromVert == fromVertToAdd:
+              if toVert < toVerToAdd:
+                fromVertToAdd = fromVert
+                toVertToAdd = toVert
+                maxWeight = mutualInfo[fromVert][toVert]
+    vertices.add(toVertToAdd)
+    if fromVertToAdd not in edges:
+      edges[fromVertToAdd] = [toVertToAdd]
+    else:
+      edges[fromVertToAdd].append(toVertToAdd)
+  return vertices, edges
+      
+        
+
 if __name__ == "__main__":
 
   if len(sys.argv) != 4:
@@ -190,7 +225,8 @@ if __name__ == "__main__":
       sys.exit(-1)
 
     mutualInfo = calcMutualInfoForData(data)
-    print mutualInfo
+    vertices, edges = primsAlgo(mutualInfo) 
+    print edges
   else:
     print 'Error. Invalid algorithm specified. Quitting...'
     sys.exit(-1)
