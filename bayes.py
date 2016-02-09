@@ -1,6 +1,7 @@
 import arff
 import sys
 import math
+from collections import deque
 
 classDict = {}
 conditionalCounts = {}
@@ -201,8 +202,93 @@ def primsAlgo(mutualInfo):
     else:
       edges[fromVertToAdd].append(toVertToAdd)
   return vertices, edges
-      
-        
+
+def getParentsOfVert(vert, edges, data):
+  # always add the class as a parent
+  parents = [] 
+  for fromVert in edges:
+    toVerts = edges[fromVert]
+    for toVert in toVerts:
+      if vert == toVert:
+        parents.append(fromVert)
+  parents.append(len(data['attributes']) - 1)
+  return parents
+
+def getNewQueue(queue, attributeVals, vert):
+  newQueue = deque()
+  for oldVal in queue:
+    for key in oldVal:
+      for newVal in attributeVals:
+        valDict = {}
+        valDict[key] = oldVal[key]
+        valDict[vert] = newVal
+        newQueue.append(valDict)
+  return newQueue
+
+def constructCondProbTable(edges, data, currVert):
+  parents = getParentsOfVert(currVert, edges, data)
+  queue = deque()
+
+  firstVals = data['attributes'][parents[0]][1]
+  for val in firstVals:
+    queue.append({parents[0]:val})
+
+  for i in xrange(1, len(parents)):
+    queue = getNewQueue(queue, data['attributes'][parents[i]][1], parents[i])
+
+  cptTable = {}
+  attrValues = data['attributes'][currVert][1]
+  for attrVal in attrValues:
+    if attrVal not in cptTable:
+      cptTable[attrVal] = {}
+    for combo in queue:
+      cptKey = tuple(sorted(combo.items()))
+      prob = tanGetCondProb(attrVal, currVert, combo, data)   
+      cptTable[attrVal][cptKey] = prob
+  return cptTable
+
+def getAllCptTables(edges, data):
+  attributes = data['attributes']
+  cptTables = {}
+  for i in xrange(0, len(attributes) - 1):
+    cptTables[i] = constructCondProbTable(edges, data, i)
+
+  total = len(data['data'])
+  labelDict = {}
+  numLabels = len(classDict)
+  for label in classDict:
+    prob = float((classDict[label] + k)) / float((total + (k * numLabels)))
+    labelDict[label] = prob
+    
+  cptTables[len(attributes) - 1] = labelDict
+
+  return cptTables
+
+def tanGetCondProb(attrVal, attrIndex, combo, data):
+  jointCount = 0
+  for row in data['data']:
+    if row[attrIndex] == attrVal:
+      countRow = True
+      for parentIndex in combo:
+        if row[parentIndex] != combo[parentIndex]:
+          countRow = False
+      if countRow:
+        jointCount += 1
+
+  condCount = 0
+  for row in data['data']:
+    countRow = True
+    for parentIndex in combo:
+      if row[parentIndex] != combo[parentIndex]:
+        countRow = False
+    if countRow:
+      condCount += 1
+
+  numPossibilities = len(data['attributes'][attrIndex][1])
+
+  prob = float((jointCount + k)) / float((condCount + (k * numPossibilities)))
+  return prob 
+
 
 if __name__ == "__main__":
 
@@ -217,7 +303,6 @@ if __name__ == "__main__":
     print '\n'
     print numCorrectExamples
   elif sys.argv[3] == 't':
-    print 'TAN'
     try:
       data = arff.load(open(trainFileName, 'rb'))
     except IOError:
@@ -226,7 +311,8 @@ if __name__ == "__main__":
 
     mutualInfo = calcMutualInfoForData(data)
     vertices, edges = primsAlgo(mutualInfo) 
-    print edges
+    cptTables = getAllCptTables(edges, data)
+    print cptTables[18]
   else:
     print 'Error. Invalid algorithm specified. Quitting...'
     sys.exit(-1)
