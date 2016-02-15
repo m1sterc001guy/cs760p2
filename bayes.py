@@ -290,6 +290,65 @@ def tanGetCondProb(attrVal, attrIndex, combo, data):
   return prob 
 
 
+def getKey(parents, row, label):
+  key  = {}
+  for parent in parents:
+    if parent != len(row) - 1:
+      key[parent] = row[parent]
+  key[len(row) - 1] = label
+  return tuple(sorted(key.items()))
+
+def tanGetPartProbForLabel(label, testData, row, cptTables):
+  # prior
+  prior = cptTables[18][label]
+  returnVal = prior
+
+  for i in xrange(0, len(row) - 1):
+    value = row[i]
+    table = cptTables[i][value]
+    parents = getParentsOfVert(i, edges, testData)
+    key = getKey(parents, row, label) 
+    condProb = table[key]
+    returnVal *= condProb
+  return returnVal
+
+def tanGetLabelProb(label, testData, row, cptTables):
+  denominator = 0
+  for currLabel in classDict:
+    denominator += tanGetPartProbForLabel(currLabel, testData, row, cptTables)
+
+  numerator = tanGetPartProbForLabel(label, testData, row, cptTables)
+  return numerator / denominator
+
+def tanClassifyTestData(testData, edges, cptTables):
+  numCorrect = 0
+  for row in testData['data']:
+    maxProb = 0.0
+    predictedClass = ''
+    for currLabel in classDict:
+      prob = tanGetLabelProb(currLabel, testData, row, cptTables)
+      if prob > maxProb:
+        maxProb = prob
+        predictedClass = currLabel
+    if predictedClass == row[len(row) - 1]:
+      numCorrect += 1
+    print predictedClass + ' ' + row[len(row) - 1] + ' ' + str(maxProb)
+  print '\n'
+  print numCorrect
+
+def printTanStructure(testData, edges):
+  for i in xrange(0, len(testData['attributes']) - 1):
+    name = testData['attributes'][i][0]
+    parents = getParentsOfVert(i, edges, testData)
+    lineToPrint = name
+    for parent in parents:
+      lineToPrint += ' ' + testData['attributes'][parent][0]
+    print lineToPrint
+  print '\n'
+
+
+
+
 if __name__ == "__main__":
 
   if len(sys.argv) != 4:
@@ -312,7 +371,15 @@ if __name__ == "__main__":
     mutualInfo = calcMutualInfoForData(data)
     vertices, edges = primsAlgo(mutualInfo) 
     cptTables = getAllCptTables(edges, data)
-    print cptTables[18]
+
+    try:
+      testData = arff.load(open(testFileName, 'rb'))
+    except IOError:
+      print 'Error. Invalid test set file name specified, Quitting...'
+      sys.exit(-1)
+
+    printTanStructure(testData, edges)
+    tanClassifyTestData(testData, edges, cptTables)
   else:
     print 'Error. Invalid algorithm specified. Quitting...'
     sys.exit(-1)

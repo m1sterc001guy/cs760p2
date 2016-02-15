@@ -1,7 +1,0 @@
-@relation lymphography
-@attribute 'attr1' { no, yes}
-@attribute 'attr2' { no, yes}
-@attribute 'attr3' { no, yes}
-@attribute 'class' { justin, nathan}
-@data
-no,yes,no,justin
